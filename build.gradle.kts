@@ -24,24 +24,5 @@ dependencies {
     // last LGPL release of itext is version 4.2.0
 //  https://mvnrepository.com/artifact/itext/itext
     implementation("itext:itext:4.2.0")
-
-//    // This dependency is exported to consumers, that is to say found on their compile classpath.
-//    api("org.apache.commons:commons-math3:3.6.1")
-//
-//    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-//    implementation("com.google.guava:guava:27.1-jre")
-//
-//    // Use JUnit Jupiter API for testing.
-//    testImplementation("org.junit.jupiter:junit-jupiter-api:5.4.2")
-//
-//    // Use JUnit Jupiter Engine for testing.
-//    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.4.2")
 }
-
-/*
-val test by tasks.getting(Test::class) {
-    // Use junit platform for unit tests
-    useJUnitPlatform()
-}
-*/
 
