@@ -1,9 +1,6 @@
 package org.example;
 
-import com.lowagie.text.pdf.PdfDictionary;
-import com.lowagie.text.pdf.PdfName;
-import com.lowagie.text.pdf.PdfObject;
-import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.*;
 
 import java.io.PrintStream;
 
@@ -14,7 +11,7 @@ class PdfStructurePrinter {
 
         out.println("### ROOT ###");
         PdfDictionary root = reader.getCatalog();
-        printRecursively(reader, root, out, "");
+        printRecursively(root, out, "");
 
         out.println();
         out.println("### Pages ###");
@@ -23,18 +20,22 @@ class PdfStructurePrinter {
             out.println();
             out.println("## Page " + pageNumber + " ##");
             PdfDictionary page = reader.getPageN(pageNumber);
-            printRecursively(reader, page, out, "");
+            printRecursively(page, out, "");
         }
     }
 
-    private void printRecursively(PdfReader reader, PdfDictionary dictionary, PrintStream out, String prefix) {
+    private void printRecursively(PdfDictionary dictionary, PrintStream out, String prefix) {
         for (Object keyObject : dictionary.getKeys()) {
             PdfName key = (PdfName) keyObject;
             PdfObject value = dictionary.get(key);
             String outputFirstPart = prefix + key.toString() + ": (" + value.getClass().getSimpleName() + "] ";
+            if (value.isIndirect()) {
+                PdfIndirectReference indirect = dictionary.getAsIndirectObject(key);
+                value = PdfReader.getPdfObject(indirect);
+            }
             if (value.isDictionary()) {
                 out.println(outputFirstPart);
-                printRecursively(reader, dictionary.getAsDict(key), out, prefix + "\t");
+                printRecursively(dictionary.getAsDict(key), out, prefix + "\t");
             } else {
                 out.println(outputFirstPart + value.toString());
             }
