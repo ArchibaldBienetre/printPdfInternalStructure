@@ -6,7 +6,7 @@ import java.io.PrintStream;
 
 class PdfStructurePrinter {
 
-    // either this, or track used-up indirect references
+    // either this, or track used-up indirect references to not end up with potential stack overflows
     private static final int MAX_RECURSION_DEPTH = 20;
     private static final String SPACER = "  ";
 
@@ -19,13 +19,13 @@ class PdfStructurePrinter {
         printPages(out, reader);
     }
 
-    private void printFromRoot(PrintStream out, PdfReader reader) {
+    private void printFromRoot(PrintStream out, PdfReader reader) throws Exception {
         out.println("### ROOT ###");
         PdfDictionary root = reader.getCatalog();
         printRecursively(root, out, "");
     }
 
-    private void printPages(PrintStream out, PdfReader reader) {
+    private void printPages(PrintStream out, PdfReader reader) throws Exception {
         out.println("### Pages ###");
         int pageCount = reader.getNumberOfPages();
         for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
@@ -36,7 +36,7 @@ class PdfStructurePrinter {
         }
     }
 
-    private void printRecursively(PdfDictionary dictionary, PrintStream out, String prefix) {
+    private void printRecursively(PdfDictionary dictionary, PrintStream out, String prefix) throws Exception {
         for (Object keyObject : dictionary.getKeys()) {
             PdfName key = (PdfName) keyObject;
             PdfObject value = dictionary.get(key);
@@ -44,14 +44,14 @@ class PdfStructurePrinter {
         }
     }
 
-    private void printRecursively(PdfArray array, PrintStream out, String prefix) {
+    private void printRecursively(PdfArray array, PrintStream out, String prefix) throws Exception {
         int arraySize = array.size();
         for (int arrayIndex = 0; arrayIndex < arraySize; arrayIndex++) {
             printArrayValue(array, out, prefix + SPACER, arrayIndex);
         }
     }
 
-    private void printDictionaryValue(PdfDictionary dictionary, PrintStream out, String prefix, PdfName key, PdfObject value) {
+    private void printDictionaryValue(PdfDictionary dictionary, PrintStream out, String prefix, PdfName key, PdfObject value) throws Exception {
         if (maxRecursionDepthReached(prefix)) {
             out.println(prefix + "[BREAK] Maximum recursion depth reached!");
             return;
@@ -86,7 +86,7 @@ class PdfStructurePrinter {
         return value;
     }
 
-    private void printArrayValue(PdfArray array, PrintStream out, String prefix, int arrayIndex) {
+    private void printArrayValue(PdfArray array, PrintStream out, String prefix, int arrayIndex) throws Exception {
         if (maxRecursionDepthReached(prefix)) {
             out.println("[BREAK] Maximum recursion depth reached!");
             return;
@@ -118,10 +118,14 @@ class PdfStructurePrinter {
         return value;
     }
 
-    private void printStream(PrintStream out, String prefix, PdfStream stream) {
-        // FIXME: not yet working, will write "null" in all my test cases
-        byte[] bytes = stream.getBytes();
-        String content = (bytes != null ? new String(stream.getBytes()) : null);
+    private void printStream(PrintStream out, String prefix, PdfStream stream) throws Exception {
+        byte[] bytes;
+        if (stream instanceof PRStream) {
+            bytes = PdfReader.getStreamBytes((PRStream) stream);
+        } else {
+            bytes = stream.getBytes();
+        }
+        String content = (bytes != null ? new String(bytes) : null);
         out.println(prefix + SPACER + content);
     }
 }
