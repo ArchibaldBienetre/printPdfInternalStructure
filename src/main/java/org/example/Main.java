@@ -12,7 +12,7 @@ public class Main {
     }
 
     private static void printUsageAndExit() {
-        System.out.printf("Usage: [program] filePath");
+        System.out.println("\n################################\nUsage: [program] filePath\n################################\n");
         System.exit(1);
     }
 }

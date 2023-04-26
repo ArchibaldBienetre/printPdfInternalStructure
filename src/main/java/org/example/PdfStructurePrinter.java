@@ -8,6 +8,7 @@ class PdfStructurePrinter {
 
     // either this, or track used-up indirect references to not end up with potential stack overflows
     private static final int MAX_RECURSION_DEPTH = 20;
+    private static final boolean DO_NOT_PRINT_STREAMS = true;
     private static final String SPACER = "  ";
 
     void print(String filePath, PrintStream out) throws Exception {
@@ -56,22 +57,9 @@ class PdfStructurePrinter {
             out.println(prefix + "[BREAK] Maximum recursion depth reached!");
             return;
         }
-        String outputFirstPart = prefix + key.toString() + ": (" + value.getClass().getSimpleName() + "] ";
+        String outputFirstPart = prefix + key.toString() + ": (" + value.getClass().getSimpleName() + ") ";
         value = resolveIfIndirect(dictionary, key, value);
-        if (value.isDictionary()) {
-            out.println(outputFirstPart);
-            printRecursively(dictionary.getAsDict(key), out, prefix + SPACER);
-        } else if (value.isArray()) {
-            out.println(outputFirstPart);
-            PdfArray array = dictionary.getAsArray(key);
-            printRecursively(array, out, prefix);
-        } else if (value.isStream()) {
-            out.println(outputFirstPart);
-            PdfStream stream = dictionary.getAsStream(key);
-            printStream(out, prefix, stream);
-        } else {
-            out.println(outputFirstPart + value.toString());
-        }
+        extracted(out, prefix, value, outputFirstPart, dictionary.getAsDict(key), dictionary.getAsArray(key), dictionary.getAsStream(key));
     }
 
     private boolean maxRecursionDepthReached(String prefix) {
@@ -93,20 +81,22 @@ class PdfStructurePrinter {
         }
         PdfObject value = array.getPdfObject(arrayIndex);
         value = resolveIfIndirect(array, arrayIndex, value);
-        String outputFirstPart = prefix + "(" + arrayIndex + "): (" + value.getClass().getSimpleName() + "] ";
+        String outputFirstPart = prefix + "(" + arrayIndex + "): (" + value.getClass().getSimpleName() + ") ";
+        extracted(out, prefix, value, outputFirstPart, array.getAsDict(arrayIndex), array.getAsArray(arrayIndex), array.getAsStream(arrayIndex));
+    }
+
+    private void extracted(PrintStream out, String prefix, PdfObject value, String outputFirstPart, PdfDictionary asDict, PdfArray asArray, PdfStream asStream) throws Exception {
         if (value.isDictionary()) {
             out.println(outputFirstPart);
-            printRecursively(array.getAsDict(arrayIndex), out, prefix + SPACER);
+            printRecursively(asDict, out, prefix + SPACER);
         } else if (value.isArray()) {
             out.println(outputFirstPart);
-            PdfArray nestedArray = array.getAsArray(arrayIndex);
-            printRecursively(nestedArray, out, prefix);
+            printRecursively(asArray, out, prefix);
         } else if (value.isStream()) {
             out.println(outputFirstPart);
-            PdfStream stream = array.getAsStream(arrayIndex);
-            printStream(out, prefix, stream);
+            printStream(out, prefix, asStream);
         } else {
-            out.println(outputFirstPart + value.toString());
+            out.println(outputFirstPart + value);
         }
     }
 
@@ -119,13 +109,17 @@ class PdfStructurePrinter {
     }
 
     private void printStream(PrintStream out, String prefix, PdfStream stream) throws Exception {
-        byte[] bytes;
-        if (stream instanceof PRStream) {
-            bytes = PdfReader.getStreamBytes((PRStream) stream);
+        if (DO_NOT_PRINT_STREAMS) {
+            out.println(prefix + SPACER + "[SKIPPED: Stream]");
         } else {
-            bytes = stream.getBytes();
+            byte[] bytes;
+            if (stream instanceof PRStream) {
+                bytes = PdfReader.getStreamBytes((PRStream) stream);
+            } else {
+                bytes = stream.getBytes();
+            }
+            String content = (bytes != null ? new String(bytes) : null);
+            out.println(prefix + SPACER + content);
         }
-        String content = (bytes != null ? new String(bytes) : null);
-        out.println(prefix + SPACER + content);
     }
 }
