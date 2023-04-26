@@ -17,3 +17,9 @@ dependencies {
     implementation("itext:itext:4.2.0")
 }
 
+tasks.register<JavaExec>("runWithJavaExec") {
+    group = "Execution"
+    description = "Run the main class"
+    classpath = sourceSets.main.get().runtimeClasspath
+    main = "org.example.Main"
+}
